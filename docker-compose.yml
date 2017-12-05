@@ -1,0 +1,41 @@
+version: "2.1"
+
+services:
+  live:
+    image: nginx
+    restart: always
+    volumes:
+      - /data/{site_name}.build:/usr/share/nginx/html:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.frontend.rule=Host: {site_name}"
+
+  preview:
+    image: nginx
+    restart: always
+    volumes:
+      - /data/preview.{site_name}.build:/usr/share/nginx/html:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.frontend.rule=Host: preview.{site_name}"
+
+  builder:
+    build: builder
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /data:/data
+      - /root/.ssh:/root/.ssh:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.frontend.rule=Host: pagebuilder.{site_name}"
+
+  traefik:
+    image: traefik:1.3
+    command: "--logLevel=INFO --accesslogsfile=/dev/stdout"
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/traefik:/etc/traefik
